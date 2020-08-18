@@ -2,7 +2,7 @@ Five-in-a-row
 ------------------------------
 
 Starting The Game
------------------------
+
 1) Launch the Server -  python server.py
 
 2) Launch Client twice - python client.py
