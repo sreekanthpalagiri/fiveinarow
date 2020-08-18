@@ -1,0 +1,6 @@
+flask
+numpy
+unittest
+coverage
+atexit
+configparser
