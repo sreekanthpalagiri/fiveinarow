@@ -1,3 +1,5 @@
+"# fiveinarow" 
+
 Starting The Game
 -----------------------
 1) Launch the Server -  python server.py
@@ -21,4 +23,4 @@ Run Below:
     
     3) coverage html  - For HTML report
 
-Coverage Report of my testing is present in htmlcov folder. Please refer index.html"# fiveinarow" 
+Coverage Report of my testing is present in htmlcov folder. Please refer index.html
