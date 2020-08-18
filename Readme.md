@@ -1,4 +1,5 @@
-"# fiveinarow" 
+Five-in-a-row
+------------------------------
 
 Starting The Game
 -----------------------
