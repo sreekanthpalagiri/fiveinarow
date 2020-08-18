@@ -1,9 +1,12 @@
 Starting The Game
 -----------------------
-Launch the Server - python server.py
+Launch the Server - 
 
+python server.py
 
-Launch Client twice - python client.py
+Launch Client twice - 
+
+python client.py
 
 
 Assumptions
@@ -15,6 +18,7 @@ Assumptions
 Testing - Code coverage
 ----------------------------------------------
 Run Below: 
+
     1) coverage run test.py
     
     2) coverage report -m 
