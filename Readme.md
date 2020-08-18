@@ -1,12 +1,8 @@
 Starting The Game
 -----------------------
-Launch the Server - 
+1) Launch the Server -  python server.py
 
-python server.py
-
-Launch Client twice - 
-
-python client.py
+2) Launch Client twice - python client.py
 
 
 Assumptions
