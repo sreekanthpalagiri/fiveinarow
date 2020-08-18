@@ -9,13 +9,13 @@ Starting The Game
 
 
 Assumptions
-------------------
+
 1) At any point of time two players can connect to the server. If 3rd player connects it client will show message and end.
 2) If any player terminates game, his client disconnects and also opponent clients disconnects showing the message Oppononent Disconnected.
 3) Client disconnects after game completes. A new game can be launched again by launching client again.
 
 Testing - Code coverage
-----------------------------------------------
+
 Run Below: 
 
     1) coverage run test.py
