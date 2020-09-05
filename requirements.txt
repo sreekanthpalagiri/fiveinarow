@@ -4,3 +4,4 @@ unittest
 coverage
 atexit
 configparser
+flask_restful

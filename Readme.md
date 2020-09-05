@@ -3,9 +3,11 @@ Five-in-a-row
 
 Starting The Game
 
-1) Launch the Server -  python server.py
+1) Install prerequisites - pip3 install -r requirements.txt
 
-2) Launch Client twice - python client.py
+2) Launch the Server -  python server.py
+
+3) Launch Client twice - python client.py
 
 
 Assumptions
