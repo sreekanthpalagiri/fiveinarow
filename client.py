@@ -5,118 +5,123 @@ import configparser
 import time
 import atexit
 
-#read configuration
+'''read configuration and load url's'''
 config = configparser.ConfigParser()
 config.read('properties.ini')
+urlready=config['URL']['ready']
+urlnextmoveof=config['URL']['nextmoveof']
+urlmove=config['URL']['move']
+urlboard=config['URL']['board']
+    
+'''Rest Calls'''
+def joingame(playername):
+    parameters={"playername":playername}
+    response = requests.post(config['URL']['initialize'], params=parameters)
+    return response.json()['response'], response.json()['playernum']
 
+def gamereadytobegin():
+    response = requests.get(urlready)
+    return response.json()['status']
+
+def nextmoveof():
+    response = requests.get(urlnextmoveof)
+    return response.json()['moveof'],response.json()['compflag']
+
+def getboard():
+    response = requests.get(urlboard)
+    return response.json()["board"], response.json()["complete"], response.json()["winner"]
+
+def makemove(column,player):
+    parameters={"y":int(column),"player":player} 
+    response = requests.post(urlmove, params=parameters)
+    return response.json()["board"], response.json()["complete"], response.json()["winner"]
+
+'''Method to return final game status message'''
+def getgamestatustext():
+    if winner == player:
+        return 'You Win' 
+    elif winner ==-1:
+        return 'You Opponent Disconnected, Ending Game'
+    elif winner ==0:
+        return 'No Moves Left'
+    else:
+        return 'Opponent Wins'
+
+def waitforyourmove():
+    '''Wait for player's move, break if game is complete due player terminal disconnection'''
+    moveof=-1
+    while not moveof==player:
+        time.sleep(1)
+        moveof,gamecomp=nextmoveof()
+        if gamecomp:
+            break
+
+def takenextmoveasinput(board):
+    '''Take Columns as input, get index of empty row in the column and check validity'''
+    column=int(input("It's your turn {}, please enter column (1-9):  ".format(playername)))-1
+    validmove=False
+    while not validmove:
+        row=len(board[:,column][board[:,column]==' '])-1
+        if int(column) >= 0 and int(column) < 10 and row>=0:
+            validmove=True
+        else:
+            column=int(input("Invalid Move, please enter column which has empty grid (1-9):  "))-1
+    return column
+    
+'''Exit Handler, ends game in the server if client disconnects after starting the game.''' 
 def exit_handler():
     if gamestarted:
+        print('Terminal Disconnect request, ending game.')
         response = requests.post(config['URL']['end'])
-        print(response.content)
     print ('Ending your Terminal')
     
 atexit.register(exit_handler)
 
-#Take Player Name as input
+'''Take Player Name as input'''
 playername = input('Please enter your name:  ')
+while playername=='':
+    playername =input('Please enter your name:  ')
 
-#initialize
-parameters={"playername":playername}
-response = requests.post(config['URL']['initialize'], params=parameters)
-respjson=response.json()
-
-if not respjson['response']:
+'''initialize and join game, wait for player two to join if you are first player'''
+gamejoinsuccess,player = joingame(playername)
+if not gamejoinsuccess:
     print('Two Players are already connected, Please connect back later')
     gamestarted=False
     exit()
 
-gamestarted=True
-player=respjson['playernum']
 print('You are connected to the game, your Player Number: '+str(player))
-    
-#initialize
+gamestarted=True
 if player==1:
     print('Waiting for second player to Join')
-    url=config['URL']['ready']
-    response = requests.get(url)
-    respjson=response.json()
-    while not respjson['status']:
-        response = requests.get(url)
-        respjson=response.json()
+    while not gamereadytobegin():
         time.sleep(1)
     print('Player 2 Joined, Starting the Game.. You get the first move')
 else:
     print('Starting the Game.. your oppenent gets the first move.. Please wait for your move')
 
-
-urlnextmoveof=config['URL']['nextmoveof']
-response = requests.get(urlnextmoveof)
-respjson=response.json()
-moveof=respjson['moveof']
-
-urlmove=config['URL']['move']
-urlboard=config['URL']['board']
 gameend=False
-
 while not gameend:
-    while not moveof==player:
-        response = requests.get(urlnextmoveof)
-        respjson=response.json()
-        moveof=respjson['moveof']
-        time.sleep(1)
-        if respjson['compflag']:
-            break
-    
-    response = requests.get(urlboard)
-    respjson=response.json()
-    gameend=respjson["complete"]
+    '''Wait for your move'''
+    waitforyourmove()
 
+    '''Get Status of current board after other player move and show the board, 
+    if game ended show the winner and exit'''
+    board, gameend, winner=getboard()
+    print("Board after your opponent move:\n",np.array(board))
     if gameend:
-        winner=respjson["winner"]
-        if winner == player:
-            text = 'You Win' 
-        elif winner ==-1:
-                text='You Opponent Disconnected, Ending Game'
-        elif winner ==0:
-            text='No Moves Left'
-        else:
-            text=  'Opponent Wins'
-
-        print("End of Game, {}".format(text))
+        print("End of Game, {}".format(getgamestatustext()))
         exit()
 
-    if moveof==player:
-        print(np.array(respjson["board"]))
-        move=input("It's your turn {}, Enter Column(0-5) and Row(0-8) as X Y:  ".format(playername))
-        move = move.split()
-        validmove=False
-        while not validmove:
-            if len(move)==2 and int(move[0]) < 6 and int(move[1]) < 9 and respjson["board"][int(move[0])][int(move[1])]==' ':
-                validmove=True
-            else:
-                move=input("Invalid Move, Enter Column and Row as X Y:  ")
-                move = move.split()
+    '''Take next move as input'''
+    column=takenextmoveasinput(np.array(board))
+
+    '''Make the move, print the latest board'''
+    board, gameend, winner=makemove(column,player)
+    print("Board after your move:\n",np.array(board))
         
-        parameters={"x":int(move[0]),"y":int(move[1])}
-        response = requests.post(urlmove, params=parameters)
-        respjson=response.json()
-        print("Board after your move:")
-        print(np.array(respjson["board"]))
-        gameend=respjson["complete"]
-        if not gameend:
-            print("Waiting for your opponent to make his move.")
-            moveof=-1
-        else:
-            winner=respjson["winner"]
-            if winner == player:
-                text = 'You Win' 
-            elif winner ==-1:
-                text='You Opponent Disconnected, Ending Game'
-            elif winner ==0:
-                text='No Moves Left'
-            else:
-                text=  'Opponent Wins'
-
-            print("End of Game, {}".format(text))
-            exit()
-
+    '''Wait for opponents move or if game is complete, print the winner and exit'''
+    if not gameend:
+        print("Waiting for your opponent to make his move.")
+    else:
+        print("End of Game, {}".format(getgamestatustext()))
+        exit()

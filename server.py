@@ -1,9 +1,10 @@
 from flask import Flask, jsonify, request
+from flask_restful import Api, Resource
 import numpy as np
 import time
 
 app = Flask(__name__)
-players=0
+api = Api(app)
 
 class player:
     def __init__(self,name):
@@ -42,15 +43,20 @@ class fiveinarow:
             return jsonify({ "message":"Connected", 
             'response':True,"playernum":2})
 
-    def mark(self,x,y):
-        self.move+=1
-        if self.turn==1:
-            self.turn=2
-            self.gameframe[x,y]='X'
+    def mark(self,y,player):
+        x=len(game.gameframe[:,y][game.gameframe[:,y]==' '])-1
+        if int(y) >= 0 and int(y) < 10 and x>=0 and self.turn==player:
+            self.move+=1
+            if self.turn==1:
+                self.turn=2
+                self.gameframe[x,y]='X'
+            else:
+                self.turn=1
+                self.gameframe[x,y]='0'      
+            self.iscomplete(x,y)
+            return True
         else:
-            self.turn=1
-            self.gameframe[x,y]='0'      
-        self.iscomplete(x,y)  
+            return False  
 
     def checkhor(self,x,y):
         #Check Horizontal Completion
@@ -162,46 +168,43 @@ class fiveinarow:
         print('Ending Game')
         
 
-@app.route('/intialize/', methods=['POST'])
-def intialize():
-    name = request.args.get('playername')
-    print('Intializing... Request from Player'+name)
-    playerstatus=game.addplayer(name)
-    return playerstatus
+class gametasks(Resource):
 
-@app.route('/readytostart/', methods=['GET'])
-def readytostart():
-    if game.noplayers==2:
-        print('Initial Board Board:')
-        print(game.gameframe)
-        return jsonify({ "status":True})
-    else:
-        return jsonify({ "status":False})
+    def get(self,what):
+        if what=='board':
+            return jsonify({"board": game.gameframe.tolist(),"complete":game.compflag,"winner":game.winner})
+        elif what=='gamestartstatus':
+            if game.noplayers==2:
+                print('Initial Board:')
+                print(game.gameframe)
+                return jsonify({ "status":True})
+            else:
+                return jsonify({ "status":False})
+        elif what=='nextmoveof':
+            return jsonify({ "moveof":game.turn,"compflag":game.compflag})
+        else:
+            return 'Invalid Request',404
 
-@app.route('/nextmoveof/', methods=['GET'])
-def nextmoveof():
-    print('Wating for move of:',game.turn)
-    return jsonify({ "moveof":game.turn,"compflag":game.compflag})
-
-@app.route('/end/', methods=['POST'])
-def end():
-    game.endgame()
-    return 'Game Ended'
-
-@app.route('/move/', methods=['POST'])
-def move():
-    game.mark(int(request.args.get('x')),int(request.args.get('y')))
-    print('Current Board:')
-    print(game.gameframe)
-    print('Next Move of:',game.turn)
-    return  jsonify({"board": game.gameframe.tolist(),"complete":game.compflag,"winner":game.winner}) 
-
-@app.route('/currentboard/', methods=['GET'])
-def currentboard():
-    return jsonify({"board": game.gameframe.tolist(),"complete":game.compflag,"winner":game.winner})
-
+    def post(self,what):
+        if what=='AddPlayer':
+            name = request.args.get('playername')
+            print('Intializing... Request from Player '+name)
+            playerstatus=game.addplayer(name)
+            return playerstatus
+        elif what=='Move':
+            status=game.mark(int(request.args.get('y')),int(request.args.get('player')))
+            print('Current Board:')
+            print(game.gameframe)
+            print('Next Move of:',game.turn)
+            return  jsonify({"board": game.gameframe.tolist(),"complete":game.compflag,"winner":game.winner,"status":status}) 
+        elif what=='Endgame':
+            game.endgame()
+            return 'Game Ended'
+        else:
+            return 'Invalid Request',404
 
 game=fiveinarow((6,9))
+api.add_resource(gametasks, '/5inarow/<what>')
 
 if __name__ == '__main__':
     app.run(debug=True)
