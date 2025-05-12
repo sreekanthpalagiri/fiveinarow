@@ -25,5 +25,3 @@ Run Below:
     2) coverage report -m 
     
     3) coverage html  - For HTML report
-
-Coverage Report of my testing is present in htmlcov folder. Please refer index.html
